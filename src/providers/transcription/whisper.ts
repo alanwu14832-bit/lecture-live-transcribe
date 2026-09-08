@@ -9,6 +9,7 @@ import { ERRORS } from "@/lib/errors";
 import { createPcmCapture, rms, TARGET_SAMPLE_RATE, type PcmCapture } from "@/lib/audio/mic";
 import { isLikelyHallucination, mergeOverlap } from "@/lib/transcript/dedupe";
 import { Emitter, type ModelProgress, type StartOptions, type TranscriptionProvider } from "./types";
+import { buildWhisperPrompt, whisperLanguageFor, type WhisperLanguage } from "./whisper-hints";
 import type { WorkerIn, WorkerOut } from "./whisper.worker";
 
 export const WHISPER_MODELS = {
@@ -58,6 +59,9 @@ export class WhisperProvider implements TranscriptionProvider {
   private inflight: { id: number; startMs: number; resolve?: () => void } | null = null;
   private chunkStartMs = 0;
   private progressByFile = new Map<string, { loaded: number; total: number }>();
+  /** 語言與詞彙提示：建課堂時決定，之後每個區塊都帶 */
+  private language: WhisperLanguage = "zh";
+  private prompt = "";
 
   constructor(private opts: WhisperOptions) {
     this.model = WHISPER_MODELS[opts.device];
@@ -121,6 +125,8 @@ export class WhisperProvider implements TranscriptionProvider {
   async start(opts: StartOptions): Promise<void> {
     this.stopped = false;
     this.paused = false;
+    this.language = whisperLanguageFor(opts.languageMode);
+    this.prompt = buildWhisperPrompt(opts.phrases, this.language);
     try {
       await this.loadModel();
     } catch (err) {
@@ -213,7 +219,10 @@ export class WhisperProvider implements TranscriptionProvider {
     this.busy = true;
     this.inflight = { id, startMs, resolve: onDone };
     this.emitter.emit({ type: "processing", busy: true });
-    this.worker.postMessage({ type: "transcribe", id, audio } satisfies WorkerIn, [audio.buffer]);
+    this.worker.postMessage(
+      { type: "transcribe", id, audio, language: this.language, prompt: this.prompt, traditional: this.language === "zh" } satisfies WorkerIn,
+      [audio.buffer],
+    );
   }
 
   private onWorkerMessage(m: WorkerOut) {
