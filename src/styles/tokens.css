@@ -1,0 +1,53 @@
+/* 語意化 design tokens。元件只用這裡的名稱，不直接寫 hex。 */
+:root {
+  color-scheme: light;
+  --color-canvas: #f7f7f4;
+  --color-surface: #ffffff;
+  --color-surface-2: #f0f0ec;
+  --color-text-primary: #182033;
+  --color-text-secondary: #667085;
+  --color-border: #e4e7ec;
+  --color-brand: #3157d5;
+  --color-brand-soft: #e8edfb;
+  --color-recording: #c94747;
+  --color-recording-soft: #fbe9e9;
+  --color-success: #2f7d5a;
+  --color-success-soft: #e4f2ea;
+  --color-warning: #a56618;
+  --color-warning-soft: #fbf0df;
+
+  --radius-control: 9px;
+  --radius-container: 13px;
+  --shadow-overlay: 0 8px 24px rgba(24, 32, 51, 0.12), 0 1px 2px rgba(24, 32, 51, 0.08);
+
+  --reading-max-width: 800px;
+  --reading-font-size: 18px;
+  --reading-line-height: 1.7;
+
+  --duration-fast: 160ms;
+  --duration-base: 200ms;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-canvas: #111318;
+  --color-surface: #191c23;
+  --color-surface-2: #21252e;
+  --color-text-primary: #f2f4f7;
+  --color-text-secondary: #98a2b3;
+  --color-border: #2b303b;
+  --color-brand: #7997ff;
+  --color-brand-soft: #232c45;
+  --color-recording: #e06a6a;
+  --color-recording-soft: #3a2426;
+  --color-success: #5cb88c;
+  --color-success-soft: #1e3328;
+  --color-warning: #d9a054;
+  --color-warning-soft: #3a2e1c;
+  --shadow-overlay: 0 8px 24px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* 三段字級：只改閱讀區，不改介面其他部分 */
+:root[data-font-size="1"] { --reading-font-size: 16px; }
+:root[data-font-size="2"] { --reading-font-size: 18px; }
+:root[data-font-size="3"] { --reading-font-size: 21px; }

@@ -1,0 +1,73 @@
+@import "./tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body {
+  height: 100%;
+  background: var(--color-canvas);
+  color: var(--color-text-primary);
+  font-family: Inter, "Noto Sans TC", system-ui, -apple-system, "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+* { border-color: var(--color-border); }
+
+/* 時間與狀態數字等寬，避免跳動 */
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* 清楚的 focus ring，鍵盤使用者才看得到 */
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 閱讀區：中英混排的字級與行高由 tokens 控制 */
+.reading {
+  font-size: var(--reading-font-size);
+  line-height: var(--reading-line-height);
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+/* 校正規則替換過的字：點狀底線，hover 看原文 */
+.corrected {
+  text-decoration: underline dotted var(--color-warning);
+  text-underline-offset: 3px;
+  cursor: help;
+}
+
+/* 收音中的輕微呼吸，尊重 reduced motion */
+@keyframes breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+.breathe { animation: breathe 1.8s ease-in-out infinite; }
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.fade-in { animation: fade-in var(--duration-base) ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 搜尋醒目標示 */
+mark {
+  background: var(--color-warning-soft);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* 手機 safe area */
+.safe-bottom { padding-bottom: max(12px, env(safe-area-inset-bottom)); }

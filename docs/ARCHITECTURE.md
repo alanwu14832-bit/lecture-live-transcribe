@@ -1,6 +1,6 @@
 # 架構說明 v3
 
-> 對應 `PROMPT.md` v3。v2 的純靜態 HTML 路線已被取代。
+> 對應 `PROMPT.md` v3，已實作。目錄結構見 README。
 
 ## 一句話
 Next.js static export 的純前端應用，辨識、翻譯全在瀏覽器內完成，零後端、零金鑰、零費用，部署在 GitHub Pages。
@@ -32,18 +32,19 @@ TranscriptSegment { text, rawText, timestamp, detectedLanguage }
 
 ## 分層
 
-| 層 | 職責 |
-|---|---|
-| `features/session` | 狀態機：idle → checking-capability → requesting-permission → downloading-model → ready → listening ⇄ paused → recovering / error → ended |
-| `providers/transcription` | `TranscriptionProvider` 介面；`WebSpeechProvider`、`WhisperWorkerProvider` |
-| `providers/translation` | `TranslationProvider` 介面；`ChromeTranslatorProvider`，能力偵測失敗就回 null |
-| `audio` | getUserMedia、AudioContext、重取樣、音量計、資源釋放 |
-| `transcript` | 分段、相鄰 final 合併、overlap 去重、校正規則套用與還原 |
-| `storage` | IndexedDB repository（sessions、segments、notes、glossary、rules）；localStorage 存偏好 |
-| `export` | TXT／Markdown，含或不含譯文與摘要提示詞 |
-| `errors` | 技術錯誤 → 「發生什麼、會不會掉資料、接下來怎麼做」三段式訊息 |
-| `capability` | SpeechRecognition、WebGPU、WASM、Translator、IndexedDB 偵測 |
-| `ui` | design tokens、元件、四個畫面 |
+| 層 | 檔案 | 職責 |
+|---|---|---|
+| 狀態機 | `lib/session-machine.ts` | idle → checking-capability → requesting-permission → downloading-model → ready → listening ⇄ paused → recovering / error → ended；RESET 供重試與換引擎 |
+| 控制中樞 | `features/live/useLiveSession.ts` | 串起狀態機、麥克風、引擎、規則、翻譯、儲存與時鐘；UI 只讀狀態、叫動作 |
+| 轉錄引擎 | `providers/transcription/` | `TranscriptionProvider` 介面；`WebSpeechProvider`（自動重啟、resultIndex 去重）、`WhisperProvider` + `whisper.worker.ts`（區塊、overlap、靜音跳過） |
+| 翻譯 | `providers/translation/chrome.ts` | Chrome Translator + LanguageDetector；不支援回 null |
+| 音訊 | `lib/audio/mic.ts` + `public/pcm-worklet.js` | getUserMedia、音量計、16 kHz PCM（AudioWorklet，退 ScriptProcessor）、資源釋放 |
+| 逐字稿處理 | `lib/transcript/` | `segmentation`（合併段落）、`dedupe`（overlap 去重、幻覺過濾）、`corrections`（規則套用、從編輯推規則） |
+| 儲存 | `lib/db.ts`、`lib/prefs.ts` | IndexedDB repository；localStorage 偏好 |
+| 匯出 | `lib/export.ts` | TXT／Markdown，選附筆記、譯文、摘要提示詞 |
+| 錯誤 | `lib/errors.ts` | 三段式訊息與可執行動作 |
+| 能力偵測 | `lib/capability.ts` | SpeechRecognition、phrase biasing、WebGPU、WASM、Translator、安全來源 |
+| UI | `components/`、`features/*`、`styles/tokens.css` | design tokens、四個畫面 |
 
 ## 為什麼這樣選
 

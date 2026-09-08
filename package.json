@@ -1,0 +1,36 @@
+{
+  "name": "casenote",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CaseNote：商學院學生的免費中英混合課堂即時轉錄工作台",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "npx serve out",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "3.8.1",
+    "idb": "8.0.3",
+    "next": "15.5.25",
+    "react": "19.1.1",
+    "react-dom": "19.1.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "3.3.7",
+    "@types/node": "22.15.3",
+    "@types/react": "19.1.9",
+    "@types/react-dom": "19.1.7",
+    "autoprefixer": "10.4.21",
+    "eslint": "9.31.0",
+    "eslint-config-next": "15.5.25",
+    "fake-indexeddb": "6.2.5",
+    "postcss": "8.5.6",
+    "tailwindcss": "3.4.19",
+    "typescript": "5.8.3",
+    "vitest": "3.2.4"
+  }
+}
