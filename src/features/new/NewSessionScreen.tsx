@@ -7,6 +7,8 @@ import { Icon } from "@/components/Icon";
 import { PrivacyNotice } from "@/components/PrivacyNotice";
 import { usePrefs } from "@/components/PrefsProvider";
 import { MicTest } from "./MicTest";
+import { GroqKeyField } from "@/components/GroqKeyField";
+import { loadGroqKey } from "@/lib/prefs";
 import { detectCapabilities, recommendEngine, type Capabilities } from "@/lib/capability";
 import { addGlossaryTerm, createSession } from "@/lib/db";
 import { ENGINE_LABELS, LANGUAGE_MODE_LABELS, type Engine, type LanguageMode } from "@/lib/types";
@@ -28,12 +30,14 @@ export function NewSessionScreen() {
   const [engine, setEngine] = useState<Engine | null>(null);
   const [engineTouched, setEngineTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [hasGroqKey, setHasGroqKey] = useState(false);
 
   useEffect(() => {
     detectCapabilities().then(setCaps);
+    setHasGroqKey(!!loadGroqKey());
   }, []);
 
-  const recommended = useMemo(() => (caps ? recommendEngine(caps, mode) : null), [caps, mode]);
+  const recommended = useMemo(() => (caps ? recommendEngine(caps, mode, hasGroqKey) : null), [caps, mode, hasGroqKey]);
   useEffect(() => {
     if (recommended && !engineTouched) setEngine(recommended);
   }, [recommended, engineTouched]);
@@ -106,7 +110,7 @@ export function NewSessionScreen() {
             ) : noEngine ? (
               <Notice tone="warning" title="這個瀏覽器無法轉錄" body="它既沒有內建語音辨識，也不支援 WebAssembly。請改用最新版的 Chrome 或 Edge。" />
             ) : (
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="grid gap-2 sm:grid-cols-3">
                 <EngineCard
                   engine="whisper"
                   selected={engine === "whisper"}
@@ -131,6 +135,23 @@ export function NewSessionScreen() {
                     mode === "mixed" ? "同一句內中英切換可能較不準" : "需要網路連線",
                   ]}
                 />
+                <EngineCard
+                  engine="groq"
+                  selected={engine === "groq"}
+                  recommended={recommended === "groq"}
+                  disabled={false}
+                  onSelect={() => { setEngine("groq"); setEngineTouched(true); }}
+                  lines={[
+                    "whisper-large-v3-turbo，品質最高，延遲約 2 到 5 秒",
+                    "每句話以音訊檔送到 Groq 的伺服器辨識",
+                    hasGroqKey ? "已設定金鑰" : "需要免費申請一組 Groq API key",
+                  ]}
+                />
+              </div>
+            )}
+            {engine === "groq" && caps && !insecure && !noEngine && (
+              <div className="mt-2 rounded-container border border-border bg-surface p-3">
+                <GroqKeyField onChange={setHasGroqKey} />
               </div>
             )}
           </fieldset>
@@ -172,7 +193,7 @@ export function NewSessionScreen() {
           <PrivacyNotice />
 
           <div className="flex items-center gap-3 pt-2">
-            <Button type="submit" variant="primary" size="lg" icon="mic" disabled={!engine || noEngine || insecure || submitting}>
+            <Button type="submit" variant="primary" size="lg" icon="mic" disabled={!engine || noEngine || insecure || submitting || (engine === "groq" && !hasGroqKey)}>
               開始轉錄
             </Button>
             <span className="text-xs text-secondary">

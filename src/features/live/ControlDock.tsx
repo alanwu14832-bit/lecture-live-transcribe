@@ -40,7 +40,7 @@ export function ControlDock({
         {/* 3. 是否安全保存 4. 是否仍在處理 */}
         <div className="hidden sm:flex items-center gap-2 text-xs text-secondary pl-1">
           <SaveBadge state={saveState} />
-          {status === "processing" && <span className="inline-flex items-center gap-1 text-brand"><Icon name="refresh" size={13} className="breathe" /> 本機辨識中</span>}
+          {status === "processing" && <span className="inline-flex items-center gap-1 text-brand"><Icon name="refresh" size={13} className="breathe" /> {engine === "groq" ? "上傳辨識中" : "本機辨識中"}</span>}
           {status === "recovering" && <span className="inline-flex items-center gap-1 text-warning"><Icon name="refresh" size={13} className="breathe" /> 重新連線中</span>}
         </div>
 

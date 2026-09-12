@@ -37,6 +37,7 @@ TranscriptSegment { text, rawText, timestamp, detectedLanguage }
 | 狀態機 | `lib/session-machine.ts` | idle → checking-capability → requesting-permission → downloading-model → ready → listening ⇄ paused → recovering / error → ended；RESET 供重試與換引擎 |
 | 控制中樞 | `features/live/useLiveSession.ts` | 串起狀態機、麥克風、引擎、規則、翻譯、儲存與時鐘；UI 只讀狀態、叫動作 |
 | 轉錄引擎 | `providers/transcription/` | `TranscriptionProvider` 介面；`WebSpeechProvider`（自動重啟、resultIndex 去重、phrase biasing）、`WhisperProvider` + `whisper.worker.ts`（區塊、overlap、靜音跳過）、`whisper-hints.ts`（語言 token 與詞彙前文提示）。Worker 自己組 `decoder_input_ids` 是因為 Transformers.js 3.x 沒實作 `prompt_ids`；中文輸出經 OpenCC 簡轉繁 |
+| 雲端引擎 | `providers/transcription/groq.ts`、`lib/audio/vad.ts`、`lib/audio/wav.ts` | 自備金鑰：VAD 停頓切段 → WAV → Groq Whisper API；429/5xx 退避、401 判金鑰無效、連續失敗才停 |
 | 翻譯 | `providers/translation/chrome.ts` | Chrome Translator + LanguageDetector；不支援回 null |
 | 音訊 | `lib/audio/mic.ts` + `public/pcm-worklet.js` | getUserMedia、音量計、16 kHz PCM（AudioWorklet，退 ScriptProcessor）、資源釋放 |
 | 逐字稿處理 | `lib/transcript/` | `segmentation`（合併段落）、`dedupe`（overlap 去重、幻覺過濾）、`corrections`（規則套用、從編輯推規則） |

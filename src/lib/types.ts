@@ -4,7 +4,7 @@
  */
 
 export type LanguageMode = "mixed" | "zh" | "en";
-export type Engine = "web-speech" | "whisper";
+export type Engine = "web-speech" | "whisper" | "groq";
 export type SessionStatus = "draft" | "live" | "ended";
 export type DetectedLanguage = "zh" | "en" | "mixed" | "unknown";
 
@@ -89,6 +89,7 @@ export const LANGUAGE_MODE_LABELS: Record<LanguageMode, string> = {
 export const ENGINE_LABELS: Record<Engine, string> = {
   "web-speech": "快速模式",
   whisper: "本機雙語辨識",
+  groq: "自備金鑰（Groq）",
 };
 
 export function newId(): string {

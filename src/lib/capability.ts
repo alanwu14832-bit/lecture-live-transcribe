@@ -48,8 +48,12 @@ export async function detectCapabilities(): Promise<Capabilities> {
   };
 }
 
-/** 依裝置能力給引擎建議。中英混合且有 WebGPU 才推薦本機模型。 */
-export function recommendEngine(caps: Capabilities, mode: "mixed" | "zh" | "en"): "web-speech" | "whisper" {
+/**
+ * 依裝置能力給引擎建議。
+ * 有 Groq 金鑰就推薦它：品質最高、不吃本機算力；中英混合且有 WebGPU 才推薦本機模型。
+ */
+export function recommendEngine(caps: Capabilities, mode: "mixed" | "zh" | "en", hasGroqKey = false): "web-speech" | "whisper" | "groq" {
+  if (hasGroqKey) return "groq";
   if (mode === "mixed" && caps.webgpu && caps.wasm) return "whisper";
   if (caps.speechRecognition) return "web-speech";
   return caps.wasm ? "whisper" : "web-speech";

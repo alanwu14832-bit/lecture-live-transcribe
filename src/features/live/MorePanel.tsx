@@ -5,6 +5,7 @@ import { Dialog } from "@/components/Dialog";
 import { Icon } from "@/components/Icon";
 import { usePrefs } from "@/components/PrefsProvider";
 import { SUGGESTED_RULES } from "@/lib/transcript/corrections";
+import { GroqKeyField } from "@/components/GroqKeyField";
 import type { CorrectionRule, GlossaryTerm } from "@/lib/types";
 
 type Tab = "display" | "glossary" | "rules";
@@ -76,6 +77,11 @@ export function MorePanel({
           {translationProgress != null && (
             <div className="text-xs text-secondary tnum">準備翻譯模型 {Math.round(translationProgress * 100)}%</div>
           )}
+          <div className="border-t border-border pt-4">
+            <p className="text-sm font-medium mb-1">Groq 金鑰（自備金鑰引擎）</p>
+            <p className="text-xs text-secondary mb-2 leading-relaxed">免費申請，只存在這台裝置。改了金鑰要重新開始課堂才會生效。</p>
+            <GroqKeyField />
+          </div>
           <p className="text-xs text-secondary border-t border-border pt-3">{engineNote}</p>
         </div>
       )}

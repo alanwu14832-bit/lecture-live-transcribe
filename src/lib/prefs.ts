@@ -12,7 +12,7 @@ export interface Prefs {
   fontSize: FontSize;
   notesOpen: boolean;
   lastLanguageMode: "mixed" | "zh" | "en";
-  lastEngine: "web-speech" | "whisper";
+  lastEngine: "web-speech" | "whisper" | "groq";
   /** 使用者已看過隱私提示 */
   privacyAcknowledged: boolean;
   /** 校正規則總開關 */
@@ -63,4 +63,28 @@ export function applyPrefsToDocument(prefs: Prefs) {
   const dark = prefs.theme === "dark" || (prefs.theme === "system" && prefersDark);
   root.dataset.theme = dark ? "dark" : "light";
   root.dataset.fontSize = String(prefs.fontSize);
+}
+
+/**
+ * 自備金鑰引擎的 API key。只存在這台裝置的 localStorage，不進 IndexedDB、不進匯出檔。
+ * 分開存是為了避免和一般偏好一起被複製到任何地方。
+ */
+const GROQ_KEY = "casenote:groq-key";
+
+export function loadGroqKey(): string {
+  try {
+    return localStorage.getItem(GROQ_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export function saveGroqKey(key: string) {
+  try {
+    const clean = key.trim();
+    if (clean) localStorage.setItem(GROQ_KEY, clean);
+    else localStorage.removeItem(GROQ_KEY);
+  } catch {
+    /* 存不進去就只能這次頁面用 */
+  }
 }

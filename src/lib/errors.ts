@@ -3,7 +3,7 @@
  * 「發生什麼事、會不會丟資料、接下來可以做什麼」。
  */
 
-export type ErrorAction = "retry" | "switch-to-fast" | "reload" | "dismiss" | "open-permission-help";
+export type ErrorAction = "retry" | "switch-to-fast" | "reload" | "dismiss" | "open-permission-help" | "open-settings";
 
 export interface AppError {
   code: string;
@@ -120,6 +120,39 @@ export const ERRORS = {
     detail: "瀏覽器只允許安全來源存取麥克風。請用 https:// 或 localhost 開啟本站。",
     dataSafe: true,
     actions: [{ label: "知道了", action: "dismiss" }],
+    persistent: true,
+  }),
+  groqKeyMissing: (): AppError => ({
+    code: "groq-key-missing",
+    title: "還沒設定 Groq 金鑰",
+    detail: `自備金鑰引擎需要一組 Groq API key（免費申請）。${SAFE}到設定貼上金鑰後重試，或改用快速模式。`,
+    dataSafe: true,
+    actions: [
+      { label: "開啟設定", action: "open-settings" },
+      { label: "改用快速模式", action: "switch-to-fast" },
+    ],
+    persistent: true,
+  }),
+  groqKeyInvalid: (): AppError => ({
+    code: "groq-key-invalid",
+    title: "Groq 拒絕了這組金鑰",
+    detail: `金鑰可能貼錯、已撤銷或額度用完。${SAFE}請到設定重新貼上，或改用快速模式。`,
+    dataSafe: true,
+    actions: [
+      { label: "開啟設定", action: "open-settings" },
+      { label: "改用快速模式", action: "switch-to-fast" },
+    ],
+    persistent: true,
+  }),
+  groqUnreachable: (): AppError => ({
+    code: "groq-unreachable",
+    title: "連不上 Groq",
+    detail: `連續多次上傳都失敗，可能是網路中斷或服務暫時無法使用。${SAFE}`,
+    dataSafe: true,
+    actions: [
+      { label: "重新連線", action: "retry" },
+      { label: "改用快速模式", action: "switch-to-fast" },
+    ],
     persistent: true,
   }),
   unknown: (message: string): AppError => ({

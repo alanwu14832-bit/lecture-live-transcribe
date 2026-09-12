@@ -409,3 +409,4 @@ Session 狀態至少：idle、checking-capability、requesting-permission、down
 | 儲存 | localStorage | IndexedDB | IndexedDB 存資料，localStorage 存偏好 |
 | 開發流程 | 先出架構確認再寫程式 | 不要每步等確認 | 不等確認，直接實作 |
 | 部署 | GitHub Pages | 未指定 | GitHub Pages，Next.js 用 static export |
+| 沒有 WebGPU 的電腦 | 只能快速模式 | 不使用付費或需金鑰的 API | 追加「自備金鑰（Groq）」第三引擎：預設不啟用、key 只存本機、免費額度；原本兩個免費引擎不變 |

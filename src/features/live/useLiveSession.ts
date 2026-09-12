@@ -18,6 +18,8 @@ import type { CorrectionRule, GlossaryTerm, NoteTag, PersonalNote, Session, Tran
 import { newId, nowIso } from "@/lib/types";
 import type { ModelProgress, TranscriptionEvent, TranscriptionProvider } from "@/providers/transcription/types";
 import { WebSpeechProvider } from "@/providers/transcription/web-speech";
+import { GroqProvider } from "@/providers/transcription/groq";
+import { loadGroqKey } from "@/lib/prefs";
 import { isWhisperModelCached, WhisperProvider } from "@/providers/transcription/whisper";
 import { createChromeTranslation, type TranslationProvider } from "@/providers/translation/chrome";
 
@@ -260,7 +262,9 @@ export function useLiveSession(sessionId: string | null): LiveController {
         ? providerRef.current instanceof WhisperProvider
           ? providerRef.current
           : new WhisperProvider({ device: c?.webgpu ? "webgpu" : "wasm", workletUrl: WORKLET_URL })
-        : new WebSpeechProvider();
+        : s.transcriptionEngine === "groq"
+          ? new GroqProvider({ apiKey: loadGroqKey(), workletUrl: WORKLET_URL })
+          : new WebSpeechProvider();
     providerRef.current = provider;
     provider.subscribe(onProviderEvent);
     try {
@@ -288,6 +292,10 @@ export function useLiveSession(sessionId: string | null): LiveController {
       }
       if (s.transcriptionEngine === "web-speech" && !c.speechRecognition) {
         dispatch({ type: "FAIL", error: ERRORS.speechUnsupported() });
+        return;
+      }
+      if (s.transcriptionEngine === "groq" && !loadGroqKey()) {
+        dispatch({ type: "FAIL", error: ERRORS.groqKeyMissing() });
         return;
       }
       dispatch({ type: "REQUEST_PERMISSION" });
@@ -522,7 +530,7 @@ export function useLiveSession(sessionId: string | null): LiveController {
     (mode: Session["languageMode"]) => {
       void persistSession({ languageMode: mode });
       const p = providerRef.current;
-      if (p instanceof WebSpeechProvider) p.setLanguageMode(mode);
+      if (p instanceof WebSpeechProvider || p instanceof GroqProvider) p.setLanguageMode(mode);
     },
     [persistSession],
   );

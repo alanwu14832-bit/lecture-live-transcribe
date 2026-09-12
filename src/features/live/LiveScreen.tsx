@@ -82,6 +82,7 @@ export function LiveScreen() {
     else if (a === "switch-to-fast") void live.switchToFast();
     else if (a === "reload") window.location.reload();
     else if (a === "open-permission-help") window.open("https://support.google.com/chrome/answer/2693767", "_blank", "noopener");
+    else if (a === "open-settings") setMoreOpen(true);
   };
 
   if (live.session === undefined) return <div className="h-screen flex items-center justify-center text-sm text-secondary">載入課堂⋯</div>;
@@ -99,7 +100,9 @@ export function LiveScreen() {
   const status = live.machine.status;
   const engineNote = session.transcriptionEngine === "web-speech"
     ? "目前使用快速模式：音訊會送到瀏覽器供應商的伺服器辨識（Chrome 是 Google），逐字稿只存在這台裝置。"
-    : "目前使用本機雙語辨識：音訊不會離開這台裝置。";
+    : session.transcriptionEngine === "groq"
+      ? "目前使用自備金鑰引擎：每一句話會以音訊檔送到 Groq 的伺服器辨識，金鑰與逐字稿只存在這台裝置。"
+      : "目前使用本機雙語辨識：音訊不會離開這台裝置。";
 
   return (
     <div className="relative h-[100dvh] flex flex-col overflow-hidden">
@@ -123,8 +126,8 @@ export function LiveScreen() {
       {live.backgrounded && (
         <InlineNotice icon="alert">這個分頁在背景時，瀏覽器可能會暫停麥克風。上課中請讓 CaseNote 留在前景。</InlineNotice>
       )}
-      {live.offline && session.transcriptionEngine === "web-speech" && (
-        <InlineNotice icon="wifiOff">網路中斷。快速模式需要網路，已完成的文字不受影響，恢復連線後會自動重連。</InlineNotice>
+      {live.offline && session.transcriptionEngine !== "whisper" && (
+        <InlineNotice icon="wifiOff">網路中斷。這個引擎需要網路，已完成的文字不受影響，恢復連線後會自動重連。</InlineNotice>
       )}
       {live.lagNotice && (
         <InlineNotice icon="alert" action={<Button size="sm" variant="ghost" onClick={live.dismissLag}>知道了</Button>}>
