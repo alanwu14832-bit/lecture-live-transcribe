@@ -22,6 +22,10 @@ export interface Session {
   /** 累計轉錄秒數（不含暫停） */
   duration: number;
   status: SessionStatus;
+  /** 講者分離（Nemotron 3 Diarization，本機執行）。舊資料沒有這個欄位，視為關閉 */
+  diarizationEnabled?: boolean;
+  /** 講者索引 → 使用者取的名字 */
+  speakerNames?: Record<string, string>;
 }
 
 export interface TranscriptSegment {
@@ -36,6 +40,8 @@ export interface TranscriptSegment {
   endTimestamp: number;
   detectedLanguage: DetectedLanguage;
   translation: { lang: "zh" | "en"; text: string } | null;
+  /** 講者分離判定的主要講者索引（模型通道順序，依首次出現排序）；沒開或判不出來為 null */
+  speaker?: number | null;
   isBookmarked: boolean;
   /** 使用者手動編輯過；之後的新句子不再自動併進這一段 */
   editedByUser: boolean;
@@ -99,4 +105,9 @@ export function newId(): string {
 
 export function nowIso(): string {
   return new Date().toISOString();
+}
+
+export function speakerLabel(index: number | null | undefined, names?: Record<string, string>): string | null {
+  if (index == null) return null;
+  return names?.[String(index)]?.trim() || `講者 ${index + 1}`;
 }

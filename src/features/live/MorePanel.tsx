@@ -1,30 +1,40 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/Button";
 import { Dialog } from "@/components/Dialog";
 import { Icon } from "@/components/Icon";
 import { usePrefs } from "@/components/PrefsProvider";
 import { SUGGESTED_RULES } from "@/lib/transcript/corrections";
 import { GroqKeyField } from "@/components/GroqKeyField";
+import { SpeakerChip } from "@/components/SpeakerChip";
+import type { DiarizationState } from "./useLiveSession";
 import type { CorrectionRule, GlossaryTerm } from "@/lib/types";
 
-type Tab = "display" | "glossary" | "rules";
+type Tab = "display" | "glossary" | "rules" | "speakers";
 
 export function MorePanel({
   open, onClose, glossary, onAddGlossary, onRemoveGlossary, rules, onAddRule, onToggleRule, onRemoveRule,
   translationSupported, translationEnabled, onTranslation, translationProgress, engineNote,
+  diarization, diarizationEnabled, onDiarization, speakerNames, seenSpeakers, onRenameSpeaker, webgpu, initialTab,
 }: {
   open: boolean; onClose: () => void; glossary: GlossaryTerm[]; onAddGlossary: (t: string) => void; onRemoveGlossary: (id: string) => void;
   rules: CorrectionRule[]; onAddRule: (from: string, to: string, enabled?: boolean) => void; onToggleRule: (id: string, on: boolean) => void; onRemoveRule: (id: string) => void;
   translationSupported: boolean; translationEnabled: boolean; onTranslation: (on: boolean) => void; translationProgress: number | null; engineNote: string;
+  diarization: DiarizationState; diarizationEnabled: boolean; onDiarization: (on: boolean) => void; speakerNames: Record<string, string>;
+  seenSpeakers: number[]; onRenameSpeaker: (index: number, name: string) => void; webgpu: boolean; initialTab?: Tab;
 }) {
-  const [tab, setTab] = useState<Tab>("display");
+  const [tab, setTab] = useState<Tab>(initialTab ?? "display");
+  const [names, setNames] = useState<Record<string, string>>(speakerNames);
+  useEffect(() => setNames(speakerNames), [speakerNames]);
+  useEffect(() => {
+    if (open && initialTab) setTab(initialTab);
+  }, [open, initialTab]);
   const { prefs, update } = usePrefs();
   const [term, setTerm] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
-  const tabs: Array<[Tab, string]> = [["display", "顯示"], ["glossary", "詞彙表"], ["rules", "校正規則"]];
+  const tabs: Array<[Tab, string]> = [["display", "顯示"], ["glossary", "詞彙表"], ["rules", "校正規則"], ["speakers", "講者"]];
 
   return (
     <Dialog open={open} onClose={onClose} title="設定" wide>
@@ -153,6 +163,54 @@ export function MorePanel({
               ))}
             </ul>
           </details>
+        </div>
+      )}
+      {tab === "speakers" && (
+        <div className="space-y-4">
+          <Row
+            title="講者分離"
+            desc={`在每段前面標出是誰在講（NVIDIA Nemotron 3 Diarization，模型在這台裝置執行，音訊不上傳）。第一次需要下載約 83 MB。${webgpu ? "" : "這台裝置沒有 WebGPU，會用 CPU 跑，可能跟不上講話速度。"}`}
+          >
+            <Toggle on={diarizationEnabled} onChange={onDiarization} label="講者分離" busy={diarization.status === "loading"} />
+          </Row>
+          {diarization.status === "loading" && (
+            <p className="text-xs text-secondary tnum">
+              {diarization.phase === "download"
+                ? `下載模型中 ${diarization.totalBytes > 0 ? `${Math.round((diarization.loadedBytes / diarization.totalBytes) * 100)}%` : `${(diarization.loadedBytes / 1024 / 1024).toFixed(0)} MB`}`
+                : "載入模型中"}
+            </p>
+          )}
+          {diarization.status === "ready" && (
+            <p className="text-xs text-success tnum">
+              執行中（{diarization.provider === "webgpu" ? "WebGPU" : "CPU"}）· 已分析 {Math.round(diarization.processedSec)} 秒
+              {diarization.backlogSec > 2 ? ` · 落後 ${Math.round(diarization.backlogSec)} 秒` : ""}
+              {diarization.droppedSeconds > 0 ? ` · 略過 ${diarization.droppedSeconds} 秒` : ""}
+            </p>
+          )}
+          {diarization.status === "error" && <p className="text-xs text-recording break-words">講者分離無法啟動：{diarization.message}</p>}
+          <div>
+            <p className="text-sm font-medium mb-1">為講者取名</p>
+            <p className="text-xs text-secondary mb-2">模型只知道誰先開口。改名後所有段落與匯出檔都會用新名字。</p>
+            {seenSpeakers.length === 0 ? (
+              <p className="text-xs text-secondary">還沒有段落被標上講者。</p>
+            ) : (
+              <ul className="space-y-2">
+                {seenSpeakers.map((i) => (
+                  <li key={i} className="flex items-center gap-2">
+                    <SpeakerChip index={i} />
+                    <input
+                      value={names[String(i)] ?? ""}
+                      onChange={(e) => setNames({ ...names, [String(i)]: e.target.value })}
+                      onBlur={() => onRenameSpeaker(i, names[String(i)] ?? "")}
+                      placeholder="例如：教授"
+                      aria-label={`講者 ${i + 1} 的名字`}
+                      className="flex-1 h-9 rounded-control border border-border bg-surface px-2.5 text-sm"
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       )}
     </Dialog>

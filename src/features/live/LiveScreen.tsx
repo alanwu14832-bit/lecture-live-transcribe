@@ -10,6 +10,7 @@ import { resolveShortcut } from "@/lib/keyboard";
 import { isActive } from "@/lib/session-machine";
 import { suggestRuleFromEdit } from "@/lib/transcript/corrections";
 import { ENGINE_LABELS, type TranscriptSegment } from "@/lib/types";
+import { SpeakerRenameDialog } from "@/components/SpeakerRenameDialog";
 import { ControlDock } from "./ControlDock";
 import { ErrorBanner, InlineNotice } from "./ErrorBanner";
 import { ModelDownloadDialog } from "./ModelDownloadDialog";
@@ -34,6 +35,8 @@ export function LiveScreen() {
   const [noteFocus, setNoteFocus] = useState(0);
   const [ruleSuggestion, setRuleSuggestion] = useState<{ from: string; to: string } | null>(null);
   const [fastNotice, setFastNotice] = useState(false);
+  const [renaming, setRenaming] = useState<number | null>(null);
+  const [moreTab, setMoreTab] = useState<"display" | "glossary" | "rules" | "speakers" | undefined>(undefined);
 
   useEffect(() => {
     // 手機螢幕太小，筆記預設收合；桌面照課堂設定
@@ -50,6 +53,7 @@ export function LiveScreen() {
     const q = query.toLowerCase();
     return live.segments.filter((s) => s.text.toLowerCase().includes(q)).map((s) => s.id);
   }, [query, live.segments]);
+  const seenSpeakers = useMemo(() => Array.from(new Set(live.segments.map((s) => s.speaker).filter((x): x is number => x != null))).sort((a, b) => a - b), [live.segments]);
   useEffect(() => setMatchIndex(0), [query]);
   const currentMatchId = matches.length ? matches[Math.min(matchIndex, matches.length - 1)] : null;
 
@@ -139,6 +143,23 @@ export function LiveScreen() {
           快速模式的音訊會送到瀏覽器供應商的伺服器辨識。逐字稿仍只存在這台裝置。
         </InlineNotice>
       )}
+      {live.diarization.status === "loading" && (
+        <InlineNotice icon="info">
+          講者分離模型{live.diarization.phase === "download" ? "下載中" : "載入中"}
+          {live.diarization.phase === "download" && live.diarization.totalBytes > 0 ? ` ${Math.round((live.diarization.loadedBytes / live.diarization.totalBytes) * 100)}%` : live.diarization.phase === "download" ? ` ${(live.diarization.loadedBytes / 1024 / 1024).toFixed(0)} MB` : ""}
+          ，轉錄照常進行，準備好後段落會自動標上講者。
+        </InlineNotice>
+      )}
+      {live.diarization.status === "error" && (
+        <InlineNotice icon="alert" action={<Button size="sm" variant="ghost" onClick={() => void live.setDiarizationEnabled(false)}>關閉講者分離</Button>}>
+          講者分離無法啟動（{live.diarization.message}）。逐字稿不受影響。
+        </InlineNotice>
+      )}
+      {live.diarization.lagNotice && (
+        <InlineNotice icon="alert" action={<Button size="sm" variant="ghost" onClick={live.dismissDiarizationLag}>知道了</Button>}>
+          裝置跟不上講者分離的速度，已略過 {live.diarization.droppedSeconds} 秒音訊，這幾秒的段落不會有講者標籤。用 Chrome 加 WebGPU 會快很多。
+        </InlineNotice>
+      )}
       {ruleSuggestion && (
         <InlineNotice
           icon="info"
@@ -174,7 +195,10 @@ export function LiveScreen() {
           rules={live.rules}
           showTranslation={session.translationEnabled}
           live
+          speakerNames={session.speakerNames}
+          showSpeakers={!!session.diarizationEnabled}
           actions={{
+            onRenameSpeaker: (i) => setRenaming(i),
             onEdit: (sid, text) => void live.updateSegmentText(sid, text),
             onToggleBookmark: (sid) => void live.toggleBookmark(sid),
             onRestoreRaw: (sid) => void live.restoreSegmentRaw(sid),
@@ -233,9 +257,19 @@ export function LiveScreen() {
         onRetry={() => void live.retry()}
       />
 
+      <SpeakerRenameDialog index={renaming} names={session.speakerNames} onSave={live.renameSpeaker} onClose={() => setRenaming(null)} />
+
       <MorePanel
         open={moreOpen}
-        onClose={() => setMoreOpen(false)}
+        onClose={() => { setMoreOpen(false); setMoreTab(undefined); }}
+        initialTab={moreTab}
+        diarization={live.diarization}
+        diarizationEnabled={!!session.diarizationEnabled}
+        onDiarization={(on) => void live.setDiarizationEnabled(on)}
+        speakerNames={session.speakerNames ?? {}}
+        seenSpeakers={seenSpeakers}
+        onRenameSpeaker={live.renameSpeaker}
+        webgpu={live.caps?.webgpu ?? false}
         glossary={live.glossary}
         onAddGlossary={(t) => void live.addGlossary(t)}
         onRemoveGlossary={(gid) => void live.removeGlossary(gid)}

@@ -410,3 +410,4 @@ Session 狀態至少：idle、checking-capability、requesting-permission、down
 | 開發流程 | 先出架構確認再寫程式 | 不要每步等確認 | 不等確認，直接實作 |
 | 部署 | GitHub Pages | 未指定 | GitHub Pages，Next.js 用 static export |
 | 沒有 WebGPU 的電腦 | 只能快速模式 | 不使用付費或需金鑰的 API | 追加「自備金鑰（Groq）」第三引擎：預設不啟用、key 只存本機、免費額度；原本兩個免費引擎不變 |
+| 講者分離 | 之後再做 | 不使用假的 AI 能力 | 追加為實驗功能：NVIDIA Nemotron 3 Diarization 在瀏覽器內執行，模型只給「講者 N」，名字由使用者自己取；CPU 模式跟不上時誠實顯示略過秒數 |

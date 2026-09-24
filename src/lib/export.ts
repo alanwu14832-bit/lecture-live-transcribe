@@ -3,7 +3,7 @@
  * 譯文與摘要提示詞都是選配，預設不附。
  */
 import type { PersonalNote, Session, TranscriptSegment } from "./types";
-import { LANGUAGE_MODE_LABELS, NOTE_TAG_LABELS } from "./types";
+import { LANGUAGE_MODE_LABELS, NOTE_TAG_LABELS, speakerLabel } from "./types";
 
 export function formatTimestamp(seconds: number): string {
   const s = Math.max(0, Math.floor(seconds));
@@ -57,7 +57,8 @@ export function toMarkdown(session: Session, segments: TranscriptSegment[], note
   lines.push("");
   for (const s of segments) {
     const mark = s.isBookmarked ? " ★" : "";
-    lines.push(`**[${formatTimestamp(s.timestamp)}]**${mark} ${s.text}`);
+    const who = session.diarizationEnabled ? speakerLabel(s.speaker, session.speakerNames) : null;
+    lines.push(`**[${formatTimestamp(s.timestamp)}]**${mark} ${who ? `${who}：` : ""}${s.text}`);
     if (opts.includeTranslation && s.translation) lines.push(`> ${s.translation.text}`);
     lines.push("");
   }
@@ -86,7 +87,8 @@ export function toTxt(session: Session, segments: TranscriptSegment[], notes: Pe
   lines.push(`${h.date} · ${h.mode} · ${h.duration}`);
   lines.push("");
   for (const s of segments) {
-    lines.push(`[${formatTimestamp(s.timestamp)}]${s.isBookmarked ? " ★" : ""} ${s.text}`);
+    const who = session.diarizationEnabled ? speakerLabel(s.speaker, session.speakerNames) : null;
+    lines.push(`[${formatTimestamp(s.timestamp)}]${s.isBookmarked ? " ★" : ""} ${who ? `${who}：` : ""}${s.text}`);
     if (opts.includeTranslation && s.translation) lines.push(`    ${s.translation.text}`);
     lines.push("");
   }

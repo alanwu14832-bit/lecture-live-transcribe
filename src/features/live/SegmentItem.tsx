@@ -5,6 +5,7 @@ import { Icon } from "@/components/Icon";
 import { formatTimestamp } from "@/lib/export";
 import { highlightReplacements } from "@/lib/transcript/corrections";
 import type { CorrectionRule, TranscriptSegment } from "@/lib/types";
+import { SpeakerChip } from "@/components/SpeakerChip";
 
 export interface SegmentActions {
   onEdit(id: string, text: string): void;
@@ -12,6 +13,7 @@ export interface SegmentActions {
   onRestoreRaw?(id: string): void;
   onQuote?(seg: TranscriptSegment): void;
   onSuggestRule?(before: string, after: string): void;
+  onRenameSpeaker?(index: number): void;
 }
 
 function escapeRegExp(s: string) {
@@ -30,8 +32,9 @@ function Highlight({ text, query }: { text: string; query: string }) {
   );
 }
 
-export function SegmentItem({ seg, query, rules, actions, showTranslation, isCurrentMatch }: {
+export function SegmentItem({ seg, query, rules, actions, showTranslation, isCurrentMatch, speakerNames, showSpeakers }: {
   seg: TranscriptSegment; query: string; rules: CorrectionRule[]; actions: SegmentActions; showTranslation: boolean; isCurrentMatch?: boolean;
+  speakerNames?: Record<string, string>; showSpeakers?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(seg.text);
@@ -104,6 +107,11 @@ export function SegmentItem({ seg, query, rules, actions, showTranslation, isCur
         </div>
       ) : (
         <p className="reading">
+          {showSpeakers && seg.speaker != null && (
+            <span className="mr-2 inline-flex align-[0.15em]">
+              <SpeakerChip index={seg.speaker} names={speakerNames} onClick={actions.onRenameSpeaker ? () => actions.onRenameSpeaker!(seg.speaker!) : undefined} />
+            </span>
+          )}
           {parts.map((p, i) =>
             p.from ? (
               <span key={i} className="corrected" title={`原本辨識為「${p.from}」`}>{p.text}</span>

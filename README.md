@@ -14,6 +14,7 @@
 - **課程詞彙表**與**校正規則**：詞彙當辨識提示（快速模式走 Chrome phrase biasing，本機模式當 Whisper 的前文提示）；校正規則由你自己建立、預設關閉、替換處可見可還原。
 - **語言提示**：建課堂時選的語言模式同時餵給兩個引擎；本機模式的中文輸出會自動由簡體轉成繁體（OpenCC，本機執行）。
 - **選配對照翻譯**：Chrome 138+ 內建 Translator API，本機執行，預設關閉，原文永遠不動。
+- **講者分離（實驗）**：NVIDIA Nemotron 3 Diarization 在瀏覽器內執行，段落前標出「講者 1、講者 2」，可改名成教授或同學；模型約 83 MB，音訊不上傳。
 - **匯出**：Markdown／TXT，可選附筆記、譯文與「摘要提示詞」（貼到任何 AI 網頁請它整理重點，CaseNote 本身不做摘要）。
 - **錯誤恢復**：辨識意外停止自動重連；任何錯誤都不會刪除已完成的逐字稿。
 
@@ -26,6 +27,16 @@
 3. key 只存在這台瀏覽器的 localStorage，不進 IndexedDB、不進匯出檔；每句話會以 WAV 直接從瀏覽器送到 Groq，中間沒有任何伺服器。
 
 運作方式：能量式 VAD 在講者停頓處切段（最長 20 秒），送出去的每一段都是完整句子；帶語言與詞彙提示；中文輸出轉繁體；429 與 5xx 自動退避重試，連續失敗才停下來並告知。
+
+## 講者分離（Nemotron 3 Diarization）
+
+建課堂時打開「講者分離」。第一次會從 Hugging Face 下載約 83 MB 的模型（`onnx-community/Nemotron-3-Diarization-ONNX`，q4 量化），之後留在瀏覽器快取。模型用 onnxruntime-web 在 Web Worker 裡跑，有 WebGPU 用 WebGPU，沒有就用 CPU。
+
+- 每段逐字稿完成後，用該段時間範圍內活動最多的講者標上「講者 N」。點標籤可以改名，改名會套用到所有段落與匯出檔。
+- 模型只知道誰先開口，不知道誰是教授；「講者 1」通常是最先講話的人。
+- **CPU 模式跟不上講話速度時會略過音訊**：講者身份保留，但被略過的那幾秒的段落不會有標籤，設定面板的「講者」分頁會顯示已分析與略過的秒數。在 headless Chromium 單執行緒 WASM 上實測約只有 0.4 倍即時速度；Chrome 加 WebGPU 是建議的組合。
+- 前處理（128 維 log-mel）、串流講者快取（AOSC 與 FIFO）都是從 Hugging Face transformers 的參考實作移植到 TypeScript，mel 濾波器與 librosa 完全一致，串流結果與離線一次算完的結果一致（見 `src/lib/diarization/*.test.ts`）。
+- 學校網路擋 Hugging Face 或 jsDelivr 時，可自架鏡像：在瀏覽器 console 設 `localStorage.setItem("casenote:nemotron-base", "https://你的網址/onnx")` 與 `localStorage.setItem("casenote:ort-wasm-base", "https://你的網址/ort/")`。
 
 ## 本機啟動
 
@@ -78,6 +89,7 @@ npm run build      # 靜態輸出到 out/
 | 本機雙語辨識 | ✅ WebGPU；無 WebGPU 退 WASM | WASM（慢） | WASM（慢） |
 | 自備金鑰（Groq） | ✅ | ✅ | ✅ |
 | 對照翻譯 | Chrome 138+ | ❌ | ❌ |
+| 講者分離 | ✅ WebGPU；無 WebGPU 退 CPU（會略過音訊） | Safari 26+ 有 WebGPU | CPU |
 | 詞彙提示（phrase biasing） | 新版 Chrome | ❌ | ❌ |
 
 ## 技術架構
@@ -115,5 +127,6 @@ src/
 - **分頁在背景**：Chrome 可能節流或暫停麥克風，介面會警告；上課中請讓 CaseNote 留在前景。
 - **語言提示是提示不是限制**：中英混合模式下 Whisper 以中文為主要語言，聽到英文術語通常仍會寫成英文，但偶爾會把整句英文翻成中文；遇到時切成 English-first 或改用快速模式。
 - **尚未在真實課堂驗證的部分**：本機 Whisper 路徑（含前文提示與簡轉繁）、Chrome Translator API 與 phrase biasing 在開發環境沒有 WebGPU 與 Chrome 138 可測，目前以程式碼審閱與單元測試為準，快速模式的完整流程則用模擬的 SpeechRecognition 跑過端對端。
+- **講者分離**：只有 WebGPU 才跟得上即時速度；CPU 模式會略過部分音訊。模型在 2026 年 9 月 23 日才發布，瀏覽器端的官方用法尚未公布，這裡的串流實作是照 transformers 的 Python 參考碼移植並以雙人對話錄音驗證，真實課堂的準確度還沒驗證。重疊講話時只標活動最多的一位。
 - **自備金鑰引擎**：Groq 免費額度有速率限制，超過時會退避重試、延遲拉長；金鑰洩漏的風險由使用者自己承擔。
 - **不做的事**：帳號、雲端同步、講者辨識、應用內 AI 摘要、自動翻譯。

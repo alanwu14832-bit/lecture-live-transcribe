@@ -60,7 +60,7 @@ export async function getSession(id: string): Promise<Session | undefined> {
   return (await getDb()).get("sessions", id);
 }
 
-export async function createSession(input: Pick<Session, "title" | "languageMode" | "transcriptionEngine" | "notesOpen">): Promise<Session> {
+export async function createSession(input: Pick<Session, "title" | "languageMode" | "transcriptionEngine" | "notesOpen"> & { diarizationEnabled?: boolean }): Promise<Session> {
   const t = nowIso();
   const session: Session = {
     id: newId(),
@@ -75,6 +75,8 @@ export async function createSession(input: Pick<Session, "title" | "languageMode
     endedAt: null,
     duration: 0,
     status: "draft",
+    diarizationEnabled: input.diarizationEnabled ?? false,
+    speakerNames: {},
   };
   await (await getDb()).put("sessions", session);
   return session;

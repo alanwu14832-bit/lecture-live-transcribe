@@ -20,10 +20,27 @@ import type { ModelProgress, TranscriptionEvent, TranscriptionProvider } from "@
 import { WebSpeechProvider } from "@/providers/transcription/web-speech";
 import { GroqProvider } from "@/providers/transcription/groq";
 import { loadGroqKey } from "@/lib/prefs";
+import { DiarizationEngine } from "@/providers/diarization/engine";
 import { isWhisperModelCached, WhisperProvider } from "@/providers/transcription/whisper";
 import { createChromeTranslation, type TranslationProvider } from "@/providers/translation/chrome";
 
 export type SaveState = "saved" | "saving" | "failed";
+
+export interface DiarizationState {
+  status: "off" | "loading" | "ready" | "error";
+  phase: "download" | "init" | null;
+  loadedBytes: number;
+  totalBytes: number;
+  provider: "webgpu" | "wasm" | null;
+  message: string | null;
+  lagNotice: boolean;
+  droppedSeconds: number;
+  /** 已分析的秒數與積壓秒數，給設定面板顯示 */
+  processedSec: number;
+  backlogSec: number;
+}
+
+const DIARIZATION_OFF: DiarizationState = { status: "off", phase: null, loadedBytes: 0, totalBytes: 0, provider: null, message: null, lagNotice: false, droppedSeconds: 0, processedSec: 0, backlogSec: 0 };
 
 export interface LiveController {
   session: Session | null | undefined;
@@ -45,7 +62,11 @@ export interface LiveController {
   rules: CorrectionRule[];
   translationSupported: boolean;
   translationProgress: number | null;
+  diarization: DiarizationState;
   // actions
+  setDiarizationEnabled(on: boolean): Promise<void>;
+  renameSpeaker(index: number, name: string): void;
+  dismissDiarizationLag(): void;
   downloadModel(): void;
   cancelDownload(): void;
   switchToFast(): void;
@@ -92,6 +113,8 @@ export function useLiveSession(sessionId: string | null): LiveController {
   const [rules, setRules] = useState<CorrectionRule[]>([]);
   const [translationSupported, setTranslationSupported] = useState(false);
   const [translationProgress, setTranslationProgress] = useState<number | null>(null);
+  const [diarization, setDiarization] = useState<DiarizationState>(DIARIZATION_OFF);
+  const diarizerRef = useRef<DiarizationEngine | null>(null);
 
   const levelRef = useRef(0);
   const sessionRef = useRef<Session | null>(null);
@@ -180,10 +203,53 @@ export function useLiveSession(sessionId: string | null): LiveController {
     }
   }, []);
 
+  // ---------- 講者分離 ----------
+
+  const labelSpeaker = useCallback(
+    async (seg: TranscriptSegment, persist: boolean) => {
+      const d = diarizerRef.current;
+      if (!d || d.status !== "ready") return;
+      const spk = d.speakerFor(seg.timestamp, seg.endTimestamp);
+      // undefined 代表時間軸還沒算到這裡，等下一輪
+      if (spk === undefined || spk === null || spk === seg.speaker) return;
+      const updated = { ...seg, speaker: spk };
+      segmentsRef.current = segmentsRef.current.map((x) => (x.id === seg.id ? { ...x, speaker: spk } : x));
+      setSegments(segmentsRef.current);
+      if (persist) await db.putSegment(updated).catch(() => {});
+    },
+    [],
+  );
+
+  const stopDiarizer = useCallback(async () => {
+    const d = diarizerRef.current;
+    diarizerRef.current = null;
+    if (d) await d.stop().catch(() => {});
+    setDiarization(DIARIZATION_OFF);
+  }, []);
+
+  const startDiarizer = useCallback(async () => {
+    const stream = streamRef.current;
+    if (!stream || diarizerRef.current) return;
+    const engine = new DiarizationEngine(WORKLET_URL);
+    diarizerRef.current = engine;
+    setDiarization({ ...DIARIZATION_OFF, status: "loading", phase: "download" });
+    engine.subscribe((e) => {
+      if (e.type === "progress") setDiarization((d) => ({ ...d, status: "loading", phase: e.phase, loadedBytes: e.loaded, totalBytes: e.total }));
+      else if (e.type === "ready") setDiarization((d) => ({ ...d, status: "ready", phase: null, provider: e.provider, message: null }));
+      else if (e.type === "lag") setDiarization((d) => ({ ...d, lagNotice: true, droppedSeconds: e.droppedSeconds }));
+      else if (e.type === "error" && e.fatal) setDiarization((d) => ({ ...d, status: "error", message: e.message }));
+    });
+    try {
+      await engine.start(stream, capsRef.current?.webgpu ?? false, () => activeSecondsAt(Date.now()));
+    } catch {
+      /* 事件已經送出 error 狀態 */
+    }
+  }, [activeSecondsAt]);
+
   // ---------- 引擎事件 ----------
 
   const handleFinal = useCallback(
-    async (text: string, atMs: number) => {
+    async (text: string, atMs: number, durationMs = 0) => {
       const s = sessionRef.current;
       if (!s) return;
       let final = text;
@@ -196,14 +262,20 @@ export function useLiveSession(sessionId: string | null): LiveController {
         }
       }
       const ts = activeSecondsAt(atMs);
-      const result = appendFinal(segmentsRef.current, s.id, final, ts, raw);
+      const result = appendFinal(segmentsRef.current, s.id, final, ts, raw, {}, durationMs / 1000);
       segmentsRef.current = result.segments;
       setSegments(result.segments);
       await persistSegment(result.changed);
-      // 前一段已經定型，這時候翻譯才不會白做
-      if (result.created && result.segments.length >= 2) void translateSegment(result.segments[result.segments.length - 2]);
+      // 講者判定有一秒左右的延遲：先標一次，前一段定型時再確認一次
+      void labelSpeaker(result.changed, true);
+      if (result.created && result.segments.length >= 2) {
+        const prev = result.segments[result.segments.length - 2];
+        // 前一段已經定型，這時候翻譯才不會白做
+        void translateSegment(prev);
+        setTimeout(() => void labelSpeaker(segmentsRef.current.find((x) => x.id === prev.id) ?? prev, true), 1500);
+      }
     },
-    [activeSecondsAt, persistSegment, translateSegment],
+    [activeSecondsAt, labelSpeaker, persistSegment, translateSegment],
   );
 
   const onProviderEvent = useCallback(
@@ -213,7 +285,7 @@ export function useLiveSession(sessionId: string | null): LiveController {
           setInterim(e.text);
           break;
         case "final":
-          void handleFinal(e.text, e.atMs);
+          void handleFinal(e.text, e.atMs, e.durationMs);
           break;
         case "processing":
           dispatch({ type: "PROCESSING", busy: e.busy });
@@ -243,12 +315,13 @@ export function useLiveSession(sessionId: string | null): LiveController {
     const p = providerRef.current;
     providerRef.current = null;
     if (p) await p.stop().catch(() => {});
+    await stopDiarizer();
     meterRef.current?.stop();
     meterRef.current = null;
     stopStream(streamRef.current);
     streamRef.current = null;
     setInterim("");
-  }, []);
+  }, [stopDiarizer]);
 
   const capsRef = useRef<Capabilities | null>(null);
 
@@ -275,7 +348,8 @@ export function useLiveSession(sessionId: string | null): LiveController {
     dispatch({ type: "START" });
     startClock();
     if (s.status === "draft") void persistSession({ status: "live", startedAt: nowIso() });
-  }, [onProviderEvent, persistSession, startClock]);
+    if (s.diarizationEnabled) void startDiarizer();
+  }, [onProviderEvent, persistSession, startClock, startDiarizer]);
 
   const begin = useCallback(async () => {
     const s = sessionRef.current;
@@ -420,6 +494,19 @@ export function useLiveSession(sessionId: string | null): LiveController {
     void begin();
   }, [session, begin]);
 
+  // 講者判定會落後幾秒，定期把還沒標到的段落補上
+  useEffect(() => {
+    if (diarization.status !== "ready") return;
+    const id = setInterval(() => {
+      for (const seg of segmentsRef.current.slice(-12)) {
+        if (seg.speaker == null) void labelSpeaker(seg, true);
+      }
+      const st = diarizerRef.current?.stats();
+      if (st) setDiarization((d) => ({ ...d, processedSec: st.processedSec, backlogSec: st.backlogSec, droppedSeconds: Math.round(st.droppedSec) }));
+    }, 3000);
+    return () => clearInterval(id);
+  }, [diarization.status, labelSpeaker]);
+
   // ---------- 時鐘與音量 ----------
 
   useEffect(() => {
@@ -484,16 +571,21 @@ export function useLiveSession(sessionId: string | null): LiveController {
   const pause = useCallback(() => {
     if (!isActive(machineRef.current.status)) return;
     providerRef.current?.pause();
+    diarizerRef.current?.pause();
     stopClock();
     dispatch({ type: "PAUSE" });
     void persistSession({ duration: timing.current.accumulated });
     const last = segmentsRef.current[segmentsRef.current.length - 1];
-    if (last) void translateSegment(last);
-  }, [persistSession, stopClock, translateSegment]);
+    if (last) {
+      void translateSegment(last);
+      setTimeout(() => void labelSpeaker(segmentsRef.current.find((x) => x.id === last.id) ?? last, true), 1500);
+    }
+  }, [labelSpeaker, persistSession, stopClock, translateSegment]);
 
   const resume = useCallback(() => {
     if (machineRef.current.status !== "paused") return;
     providerRef.current?.resume();
+    diarizerRef.current?.resume();
     startClock();
     dispatch({ type: "RESUME" });
   }, [startClock]);
@@ -503,13 +595,23 @@ export function useLiveSession(sessionId: string | null): LiveController {
     endedRef.current = true;
     stopClock();
     dispatch({ type: "END" });
+    const p = providerRef.current;
+    providerRef.current = null;
+    if (p) await p.stop().catch(() => {});
+    // 轉錄引擎停了以後，等講者分離把積壓算完，把還沒標的段落補標好再關
+    const d = diarizerRef.current;
+    if (d && d.status === "ready") {
+      await d.drain(15000);
+      for (const seg of segmentsRef.current) if (seg.speaker == null) await labelSpeaker(seg, true);
+      for (const seg of segmentsRef.current.slice(-3)) await labelSpeaker(seg, true);
+    }
     await teardownEngine();
     const last = segmentsRef.current[segmentsRef.current.length - 1];
     if (last) await translateSegment(last);
     await persistSession({ status: "ended", endedAt: nowIso(), duration: timing.current.accumulated });
     const id = sessionRef.current?.id;
     if (id) router.push(`/review?id=${id}`);
-  }, [persistSession, router, stopClock, teardownEngine, translateSegment]);
+  }, [labelSpeaker, persistSession, router, stopClock, teardownEngine, translateSegment]);
 
   const saveNow = useCallback(async () => {
     setSaveState("saving");
@@ -661,11 +763,37 @@ export function useLiveSession(sessionId: string | null): LiveController {
 
   const dismissLag = useCallback(() => setLagNotice(false), []);
 
+  const setDiarizationEnabled = useCallback(
+    async (on: boolean) => {
+      await persistSession({ diarizationEnabled: on });
+      if (on) {
+        if (isActive(machineRef.current.status) || machineRef.current.status === "paused") await startDiarizer();
+      } else {
+        await stopDiarizer();
+      }
+    },
+    [persistSession, startDiarizer, stopDiarizer],
+  );
+
+  const renameSpeaker = useCallback(
+    (index: number, name: string) => {
+      const names = { ...(sessionRef.current?.speakerNames ?? {}) };
+      const clean = name.trim();
+      if (clean) names[String(index)] = clean;
+      else delete names[String(index)];
+      void persistSession({ speakerNames: names });
+    },
+    [persistSession],
+  );
+
+  const dismissDiarizationLag = useCallback(() => setDiarization((d) => ({ ...d, lagNotice: false })), []);
+
   return {
     session, machine, segments, interim, elapsed, saveState, storageError, backgrounded, offline, lagNotice,
     modelProgress, needsModelDownload, caps, levelRef, notes, glossary, rules, translationSupported, translationProgress,
     downloadModel, cancelDownload, switchToFast, retry, pause, resume, end, saveNow, setTitle, setLanguageMode,
     setTranslationEnabled, updateSegmentText, toggleBookmark, restoreSegmentRaw, addNote, updateNote, deleteNote,
     addGlossary, removeGlossary, addRule, toggleRule, removeRule, dismissLag,
+    diarization, setDiarizationEnabled, renameSpeaker, dismissDiarizationLag,
   };
 }

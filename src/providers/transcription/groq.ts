@@ -191,7 +191,7 @@ export class GroqProvider implements TranscriptionProvider {
       let text = (data.text ?? "").trim();
       if (!text || isLikelyHallucination(text)) return;
       if (this.language === "zh" && this.toTraditional && needsTraditionalConversion(text)) text = this.toTraditional(text);
-      this.emitter.emit({ type: "final", text, atMs });
+      this.emitter.emit({ type: "final", text, atMs, durationMs: (seg.audio.length / TARGET_SAMPLE_RATE) * 1000 });
       return;
     }
     this.noteFailure();

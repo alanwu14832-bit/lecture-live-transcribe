@@ -6,10 +6,11 @@ import type { CorrectionRule, TranscriptSegment } from "@/lib/types";
 import { SegmentItem, type SegmentActions } from "./SegmentItem";
 
 export function TranscriptView({
-  segments, interim, query, currentMatchId, rules, actions, showTranslation, live, emptyHint,
+  segments, interim, query, currentMatchId, rules, actions, showTranslation, live, emptyHint, speakerNames, showSpeakers = false,
 }: {
   segments: TranscriptSegment[]; interim: string; query: string; currentMatchId: string | null; rules: CorrectionRule[];
   actions: SegmentActions; showTranslation: boolean; live: boolean; emptyHint: React.ReactNode;
+  speakerNames?: Record<string, string>; showSpeakers?: boolean;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
   const [follow, setFollow] = useState(true);
@@ -52,7 +53,7 @@ export function TranscriptView({
         <div className="mx-auto max-w-reading">
           {segments.length === 0 && !interim && <div className="pt-16 text-center text-secondary text-sm">{emptyHint}</div>}
           {segments.map((s) => (
-            <SegmentItem key={s.id} seg={s} query={query} rules={rules} actions={actions} showTranslation={showTranslation} isCurrentMatch={s.id === currentMatchId} />
+            <SegmentItem key={s.id} seg={s} query={query} rules={rules} actions={actions} showTranslation={showTranslation} isCurrentMatch={s.id === currentMatchId} speakerNames={speakerNames} showSpeakers={showSpeakers} />
           ))}
           {live && (
             // interim 固定在最新內容下方，佔固定高度，不推動整頁布局

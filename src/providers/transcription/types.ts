@@ -6,7 +6,7 @@ import type { Engine, LanguageMode } from "@/lib/types";
 
 export type TranscriptionEvent =
   | { type: "interim"; text: string }
-  | { type: "final"; text: string; atMs: number }
+  | { type: "final"; text: string; atMs: number; durationMs?: number }
   | { type: "processing"; busy: boolean }
   /** 引擎意外停止，provider 會自己嘗試恢復；UI 顯示「正在恢復」 */
   | { type: "dropped"; reason: string }

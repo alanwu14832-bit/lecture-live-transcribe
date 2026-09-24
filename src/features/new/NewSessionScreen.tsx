@@ -31,6 +31,7 @@ export function NewSessionScreen() {
   const [engineTouched, setEngineTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [hasGroqKey, setHasGroqKey] = useState(false);
+  const [diarize, setDiarize] = useState(false);
 
   useEffect(() => {
     detectCapabilities().then(setCaps);
@@ -49,7 +50,7 @@ export function NewSessionScreen() {
     if (!engine || submitting) return;
     setSubmitting(true);
     try {
-      const session = await createSession({ title, languageMode: mode, transcriptionEngine: engine, notesOpen });
+      const session = await createSession({ title, languageMode: mode, transcriptionEngine: engine, notesOpen, diarizationEnabled: diarize });
       const terms = glossaryText.split(/[\n,，、]/).map((t) => t.trim()).filter(Boolean);
       for (const t of terms) await addGlossaryTerm(t, session.id);
       update({ lastLanguageMode: mode, lastEngine: engine, notesOpen });
@@ -170,6 +171,26 @@ export function NewSessionScreen() {
             >
               <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-150 ${notesOpen ? "translate-x-5" : "translate-x-0.5"}`} />
               <span className="sr-only">個人筆記側欄</span>
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between rounded-container border border-border bg-surface p-4">
+            <div className="pr-4">
+              <p className="text-sm font-medium">講者分離 <span className="text-secondary font-normal">（實驗功能）</span></p>
+              <p className="text-xs text-secondary mt-0.5 leading-relaxed">
+                在每段前面標出是誰在講，之後可以把「講者 1」改名成教授。模型（NVIDIA Nemotron 3 Diarization）在這台裝置執行，第一次要下載約 83 MB。
+                {caps && !caps.webgpu && " 這台瀏覽器沒有 WebGPU，會用 CPU 跑，可能跟不上講話速度。"}
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={diarize}
+              onClick={() => setDiarize((v) => !v)}
+              className={`relative shrink-0 h-6 w-11 rounded-full transition-colors duration-150 ${diarize ? "bg-brand" : "bg-border"}`}
+            >
+              <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-150 ${diarize ? "translate-x-5" : "translate-x-0.5"}`} />
+              <span className="sr-only">講者分離</span>
             </button>
           </div>
 

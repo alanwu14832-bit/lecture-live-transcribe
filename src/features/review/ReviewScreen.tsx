@@ -18,6 +18,7 @@ import { NotesPanel } from "../live/NotesPanel";
 import { SearchBar } from "../live/SearchBar";
 import { TranscriptView } from "../live/TranscriptView";
 import { Toggle } from "../live/MorePanel";
+import { SpeakerRenameDialog } from "@/components/SpeakerRenameDialog";
 
 export function ReviewScreen() {
   const params = useSearchParams();
@@ -39,6 +40,7 @@ export function ReviewScreen() {
   const [translation, setTranslation] = useState<TranslationProvider | null>(null);
   const [translating, setTranslating] = useState(false);
   const [opts, setOpts] = useState({ includeTranslation: false, includeNotes: true, includeSummaryPrompt: false });
+  const [renaming, setRenaming] = useState<number | null>(null);
 
   useEffect(() => {
     if (!id) {
@@ -176,7 +178,10 @@ export function ReviewScreen() {
           rules={rules}
           showTranslation={session.translationEnabled}
           live={false}
+          speakerNames={session.speakerNames}
+          showSpeakers={!!session.diarizationEnabled}
           actions={{
+            onRenameSpeaker: (i) => setRenaming(i),
             onEdit: (sid, text) => {
               const seg = segments.find((s) => s.id === sid);
               if (seg) void persist({ ...seg, text, editedByUser: true, translation: null, detectedLanguage: detectLanguage(text), updatedAt: nowIso() });
@@ -237,6 +242,19 @@ export function ReviewScreen() {
           <Button size="sm" variant="ghost" icon="trash" iconOnly aria-label="刪除這堂課" onClick={() => setDeleteOpen(true)} />
         </div>
       </div>
+
+      <SpeakerRenameDialog
+        index={renaming}
+        names={session.speakerNames}
+        onSave={async (i, name) => {
+          const names = { ...(session.speakerNames ?? {}) };
+          if (name.trim()) names[String(i)] = name.trim();
+          else delete names[String(i)];
+          const next = await db.updateSession(session.id, { speakerNames: names });
+          if (next) setSession(next);
+        }}
+        onClose={() => setRenaming(null)}
+      />
 
       <Dialog open={exportOpen} onClose={() => setExportOpen(false)} title="匯出逐字稿">
         <div className="space-y-3">

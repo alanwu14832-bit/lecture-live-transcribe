@@ -47,6 +47,8 @@ export function appendFinal(
   timestamp: number,
   rawText: string | null,
   opts: SegmentationOptions = {},
+  /** 這句話的長度（秒）；有的話段落結束時間用它，沒有就當作瞬間 */
+  durationSec = 0,
 ): AppendResult {
   const gap = opts.gapSeconds ?? 2.5;
   const maxChars = opts.maxChars ?? 320;
@@ -63,7 +65,7 @@ export function appendFinal(
       ...last,
       text: joinText(last.text, clean),
       rawText: last.rawText != null || rawText != null ? joinText(last.rawText ?? last.text, rawText ?? clean) : null,
-      endTimestamp: timestamp,
+      endTimestamp: timestamp + durationSec,
       detectedLanguage: detectLanguage(joinText(last.text, clean)),
       // 併入新句子後舊譯文已經不完整，清掉讓翻譯層重做
       translation: null,
@@ -78,7 +80,7 @@ export function appendFinal(
     text: clean,
     rawText,
     timestamp,
-    endTimestamp: timestamp,
+    endTimestamp: timestamp + durationSec,
     detectedLanguage: detectLanguage(clean),
     translation: null,
     isBookmarked: false,
