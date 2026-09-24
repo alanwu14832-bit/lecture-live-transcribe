@@ -79,10 +79,10 @@ export function SegmentItem({ seg, query, rules, actions, showTranslation, isCur
   return (
     <article
       id={`seg-${seg.id}`}
-      className={`group relative pl-14 sm:pl-16 pr-2 py-2 rounded-control transition-colors duration-150 ${isCurrentMatch ? "bg-brand-soft" : "hover:bg-surface-2/60 focus-within:bg-surface-2/60"}`}
+      className={`segment-enter group relative pl-14 sm:pl-16 pr-2 py-2 rounded-control transition-colors duration-150 ${isCurrentMatch ? "bg-brand-soft" : "hover:bg-surface-2/60 focus-within:bg-surface-2/60"}`}
       aria-label={`${formatTimestamp(seg.timestamp)} 段落`}
     >
-      <span className="absolute left-0 top-2.5 w-12 sm:w-14 text-right text-[12px] tnum text-secondary/70 select-none">{formatTimestamp(seg.timestamp)}</span>
+      <span className="absolute left-0 top-3 w-12 sm:w-14 text-right text-[11.5px] mono text-secondary/70 select-none">{formatTimestamp(seg.timestamp)}</span>
       {seg.isBookmarked && <span className="absolute left-[3.1rem] sm:left-[3.6rem] top-3 text-brand" aria-label="已標記"><Icon name="bookmark" size={12} /></span>}
 
       {editing ? (
@@ -129,7 +129,7 @@ export function SegmentItem({ seg, query, rules, actions, showTranslation, isCur
       )}
 
       {!editing && (
-        <div className="absolute right-1 top-1 flex gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 bg-surface/90 rounded-control">
+        <div className="elevated absolute right-1 top-1 flex gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 bg-surface rounded-control border border-border p-0.5">
           <Button variant="ghost" size="sm" icon="edit" iconOnly aria-label="編輯段落" onClick={() => setEditing(true)} />
           <Button variant="ghost" size="sm" icon={copied ? "check" : "copy"} iconOnly aria-label={copied ? "已複製" : "複製段落"} onClick={copy} />
           <Button variant="ghost" size="sm" icon="bookmark" iconOnly aria-label={seg.isBookmarked ? "取消標記" : "標記重要"} aria-pressed={seg.isBookmarked} onClick={() => actions.onToggleBookmark(seg.id)} className={seg.isBookmarked ? "text-brand" : ""} />

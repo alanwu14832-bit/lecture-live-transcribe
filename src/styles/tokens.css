@@ -1,12 +1,13 @@
-/* 語意化 design tokens。元件只用這裡的名稱，不直接寫 hex。 */
+/* 語意化 design tokens。元件只用這裡的名稱，不直接寫 hex。
+   淺色主題整組是暖灰（配 #F7F7F4 的畫布），深色主題整組是冷灰；同一主題內不混用冷暖。 */
 :root {
   color-scheme: light;
   --color-canvas: #f7f7f4;
   --color-surface: #ffffff;
-  --color-surface-2: #f0f0ec;
-  --color-text-primary: #182033;
-  --color-text-secondary: #667085;
-  --color-border: #e4e7ec;
+  --color-surface-2: #f0efea;
+  --color-text-primary: #1c1f2a;
+  --color-text-secondary: #6b6a64;
+  --color-border: #e4e2dc;
   --color-brand: #3157d5;
   --color-brand-soft: #e8edfb;
   --color-recording: #c94747;
@@ -16,16 +17,31 @@
   --color-warning: #a56618;
   --color-warning-soft: #fbf0df;
 
+  /* 形狀規則：控制元件 9px、容器 13px、狀態標籤與浮動控制列用膠囊 */
   --radius-control: 9px;
   --radius-container: 13px;
-  --shadow-overlay: 0 8px 24px rgba(24, 32, 51, 0.12), 0 1px 2px rgba(24, 32, 51, 0.08);
+
+  /* 陰影染上畫布的色相，不用純黑；三層：貼地、浮起、浮層 */
+  --shadow-tint: 28, 31, 42;
+  --shadow-sm: 0 1px 2px rgba(var(--shadow-tint), 0.06);
+  --shadow-md: 0 1px 2px rgba(var(--shadow-tint), 0.05), 0 6px 16px rgba(var(--shadow-tint), 0.08);
+  --shadow-overlay: 0 1px 2px rgba(var(--shadow-tint), 0.08), 0 12px 32px rgba(var(--shadow-tint), 0.14);
+  /* 浮動表面頂邊一條亮邊，讓它看起來有厚度 */
+  --edge-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.75);
 
   --reading-max-width: 800px;
   --reading-font-size: 18px;
   --reading-line-height: 1.7;
 
+  /* 緩動：內建的曲線太弱，進出場用強 ease-out，畫面內移動用強 ease-in-out，抽屜用 iOS 曲線 */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --duration-press: 160ms;
   --duration-fast: 160ms;
   --duration-base: 200ms;
+  --duration-modal: 250ms;
+  --duration-drawer: 450ms;
 }
 
 :root[data-theme="dark"] {
@@ -44,7 +60,11 @@
   --color-success-soft: #1e3328;
   --color-warning: #d9a054;
   --color-warning-soft: #3a2e1c;
-  --shadow-overlay: 0 8px 24px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-tint: 0, 0, 0;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 16px rgba(0, 0, 0, 0.4);
+  --shadow-overlay: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.55);
+  --edge-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* 三段字級：只改閱讀區，不改介面其他部分 */

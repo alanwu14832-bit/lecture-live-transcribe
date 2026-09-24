@@ -186,7 +186,7 @@ export function LiveScreen() {
         />
       )}
 
-      <div className="flex-1 flex min-h-0">
+      <div id="main" className="flex-1 flex min-h-0">
         <TranscriptView
           segments={live.segments}
           interim={live.interim}
@@ -216,7 +216,7 @@ export function LiveScreen() {
         />
 
         {notesOpen && (
-          <div className="fixed inset-x-0 bottom-[60px] h-[58dvh] z-30 border-t border-border shadow-overlay md:static md:h-auto md:w-80 md:shrink-0 md:border-t-0 md:border-l md:shadow-none">
+          <div className="sheet fixed inset-x-0 bottom-[60px] h-[58dvh] z-30 border-t border-border shadow-overlay md:static md:h-auto md:w-80 md:shrink-0 md:border-t-0 md:border-l md:shadow-none">
             <NotesPanel
               notes={live.notes}
               segments={live.segments}

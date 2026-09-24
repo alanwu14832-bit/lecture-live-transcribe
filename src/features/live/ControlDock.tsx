@@ -1,5 +1,8 @@
 "use client";
+import { useState } from "react";
 import { Button } from "@/components/Button";
+import { Dialog } from "@/components/Dialog";
+import { HoldButton } from "@/components/HoldButton";
 import { Icon } from "@/components/Icon";
 import { MicLevel } from "@/components/MicLevel";
 import { formatTimestamp } from "@/lib/export";
@@ -13,17 +16,18 @@ export function ControlDock({
   status: SessionStatusValue; elapsed: number; levelRef: React.MutableRefObject<number>; saveState: SaveState; engine: Engine;
   languageMode: LanguageMode; onLanguageMode: (m: LanguageMode) => void; onPause: () => void; onResume: () => void; onEnd: () => void; onRetry: () => void;
 }) {
+  const [confirmEnd, setConfirmEnd] = useState(false);
   const active = isActive(status);
   const paused = status === "paused";
   const canControl = active || paused;
   const starting = status === "checking-capability" || status === "requesting-permission" || status === "downloading-model" || status === "ready";
   return (
     <div className="shrink-0 sm:absolute sm:bottom-4 sm:left-1/2 sm:-translate-x-1/2 z-40 w-full sm:w-auto">
-      <div className="flex items-center gap-2 sm:gap-3 bg-surface border-t sm:border border-border sm:rounded-full px-3 sm:px-4 py-2 sm:shadow-overlay safe-bottom">
+      <div className="flex items-center gap-2 sm:gap-3 bg-surface border-t sm:border border-border sm:rounded-full px-3 sm:px-4 py-2 sm:elevated-overlay safe-bottom">
         {/* 1. 是否正在轉錄 */}
         <div className="flex items-center gap-2 pr-1 sm:pr-2 border-r border-border">
           <MicLevel levelRef={levelRef} active={active} compact />
-          <span className="tnum text-sm text-secondary hidden sm:inline" aria-hidden="true">{formatTimestamp(elapsed)}</span>
+          <span className="mono text-sm text-secondary hidden sm:inline" aria-hidden="true">{formatTimestamp(elapsed)}</span>
         </div>
 
         {/* 2. 暫停／繼續 */}
@@ -60,11 +64,29 @@ export function ControlDock({
           </select>
         </label>
 
-        {/* 5. 結束課堂（不刪除內容） */}
-        <Button variant="danger" size="md" icon="stop" onClick={onEnd} disabled={!canControl && !starting && status !== "error"} className="ml-auto sm:ml-1">
-          結束課堂
-        </Button>
+        {/* 5. 結束課堂（不刪除內容）：按住才觸發，避免上課中誤觸 */}
+        <HoldButton
+          label="結束課堂"
+          icon="stop"
+          onConfirm={onEnd}
+          onKeyboardActivate={() => setConfirmEnd(true)}
+          disabled={!canControl && !starting && status !== "error"}
+          className="ml-auto sm:ml-1"
+        />
       </div>
+      <Dialog
+        open={confirmEnd}
+        onClose={() => setConfirmEnd(false)}
+        title="結束這堂課？"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setConfirmEnd(false)}>繼續上課</Button>
+            <Button variant="recording" icon="stop" onClick={() => { setConfirmEnd(false); onEnd(); }}>結束課堂</Button>
+          </>
+        }
+      >
+        <p className="text-secondary">逐字稿與筆記都會保留，結束後會進到課後頁面。</p>
+      </Dialog>
     </div>
   );
 }

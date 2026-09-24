@@ -6,7 +6,7 @@ import type { AppError, ErrorAction } from "@/lib/errors";
 /** 常駐錯誤列：說清楚發生什麼、資料安不安全、接下來能做什麼 */
 export function ErrorBanner({ error, onAction, tone = "error" }: { error: AppError; onAction: (a: ErrorAction) => void; tone?: "error" | "warning" }) {
   return (
-    <div role="alert" className={`shrink-0 border-b border-border px-4 py-3 ${tone === "error" ? "bg-recording-soft" : "bg-warning-soft"}`}>
+    <div role="alert" className={`notice-enter shrink-0 border-b border-border px-4 py-3 ${tone === "error" ? "bg-recording-soft" : "bg-warning-soft"}`}>
       <div className="mx-auto max-w-reading flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
         <div className="flex gap-2 min-w-0 flex-1">
           <Icon name="alert" size={18} className={`shrink-0 mt-0.5 ${tone === "error" ? "text-recording" : "text-warning"}`} />
@@ -30,7 +30,7 @@ export function ErrorBanner({ error, onAction, tone = "error" }: { error: AppErr
 
 export function InlineNotice({ icon = "info", children, action }: { icon?: "info" | "alert" | "wifiOff"; children: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className="shrink-0 border-b border-border bg-warning-soft px-4 py-2">
+    <div className="notice-enter shrink-0 border-b border-border bg-warning-soft px-4 py-2">
       <div className="mx-auto max-w-reading flex items-center gap-2 text-sm">
         <Icon name={icon} size={16} className="shrink-0 text-warning" />
         <span className="flex-1 min-w-0">{children}</span>

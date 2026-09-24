@@ -35,7 +35,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     <button
       ref={ref}
       type={type}
-      className={`inline-flex items-center justify-center rounded-control font-medium whitespace-nowrap select-none transition-colors duration-150 ${VARIANT[variant]} ${SIZE[size]} ${square} ${className}`}
+      className={`press inline-flex items-center justify-center rounded-control font-medium whitespace-nowrap select-none transition-[background-color,color,opacity] duration-150 ease ${VARIANT[variant]} ${SIZE[size]} ${square} ${className}`}
       {...rest}
     >
       {icon && <Icon name={icon} size={size === "sm" ? 15 : 17} />}

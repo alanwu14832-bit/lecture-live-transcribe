@@ -64,8 +64,8 @@ export function TranscriptView({
         </div>
       </div>
       {live && !follow && (
-        <div className="absolute bottom-28 left-1/2 -translate-x-1/2 fade-in">
-          <Button variant="secondary" size="sm" icon="arrowDown" onClick={jumpToLatest} className="shadow-overlay">回到最新內容</Button>
+        <div className="float-enter absolute bottom-28 left-1/2 -translate-x-1/2">
+          <Button variant="secondary" size="sm" icon="arrowDown" onClick={jumpToLatest} className="elevated-overlay rounded-full px-3">回到最新內容</Button>
         </div>
       )}
       <span className="sr-only" aria-live="polite">

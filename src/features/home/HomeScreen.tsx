@@ -42,14 +42,16 @@ export function HomeScreen() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="relative min-h-screen flex flex-col">
+      {/* 畫布頂端一點很淡的光，讓首頁不是一片平的 */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[420px]" style={{ background: "radial-gradient(60% 80% at 30% 0%, rgba(49, 87, 213, 0.06), transparent 70%)" }} />
       <AppHeader />
-      <main className="mx-auto w-full max-w-5xl px-4 sm:px-6 py-8 sm:py-12 flex-1">
-        <section className="mb-10">
-          <p className="text-secondary text-sm mb-2">商學院課堂的即時逐字稿</p>
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-5">專心聽課，讓逐字稿跟上你。</h1>
+      <main id="main" className="relative mx-auto w-full max-w-5xl px-4 sm:px-6 py-10 sm:py-16 flex-1">
+        <section className="mb-12">
+          <p className="text-secondary text-sm mb-3">商學院課堂的即時逐字稿</p>
+          <h1 className="text-3xl sm:text-[2.6rem] font-semibold tracking-[-0.02em] leading-[1.15] mb-6 max-w-[22ch]" style={{ textWrap: "balance" }}>專心聽課，讓逐字稿跟上你。</h1>
           <div className="flex flex-wrap items-center gap-3">
-            <Link href="/new" className="inline-flex items-center gap-2 h-11 px-5 rounded-control bg-brand text-white font-medium text-[15px] hover:opacity-90">
+            <Link href="/new" className="press inline-flex items-center gap-2 h-11 px-5 rounded-control bg-brand text-white font-medium text-[15px] shadow-sm hover:opacity-90">
               <Icon name="mic" size={18} /> 開始新課堂
             </Link>
             <span className="text-sm text-secondary">不需要帳號，不需要 API Key。</span>
@@ -76,19 +78,19 @@ export function HomeScreen() {
           ) : rows.length === 0 ? (
             <EmptyState />
           ) : (
-            <ul className="divide-y divide-border rounded-container border border-border bg-surface overflow-hidden">
+            <ul className="divide-y divide-border rounded-container border border-border bg-surface shadow-sm overflow-hidden">
               {rows.map((s) => (
                 <li key={s.id}>
                   <Link
                     href={`${s.status === "ended" ? "/review" : "/live"}?id=${s.id}`}
-                    className="flex items-center gap-4 px-4 sm:px-5 py-3.5 hover:bg-surface-2 transition-colors duration-150"
+                    className="press-subtle row-lift flex items-center gap-4 px-4 sm:px-5 py-3.5 hover:bg-surface-2"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="font-medium truncate">{s.title}</span>
                         {s.status !== "ended" && <span className="shrink-0 text-[11px] px-1.5 py-0.5 rounded bg-brand-soft text-brand font-medium">進行中</span>}
                       </div>
-                      <div className="text-xs text-secondary mt-0.5 tnum flex flex-wrap gap-x-2">
+                      <div className="text-xs text-secondary mt-0.5 mono flex flex-wrap gap-x-2">
                         <span>{new Date(s.startedAt ?? s.createdAt).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
                         <span>·</span>
                         <span>{formatDuration(s.duration)}</span>
@@ -124,7 +126,7 @@ function EmptyState() {
       </div>
       <p className="font-medium mb-1">還沒有任何課堂</p>
       <p className="text-sm text-secondary mb-4">開始第一堂課後，逐字稿與筆記會出現在這裡，並且只存在這台裝置。</p>
-      <Link href="/new" className="inline-flex items-center gap-2 h-10 px-4 rounded-control bg-brand text-white text-sm font-medium hover:opacity-90">
+      <Link href="/new" className="press inline-flex items-center gap-2 h-10 px-4 rounded-control bg-brand text-white text-sm font-medium hover:opacity-90">
         <Icon name="mic" size={16} /> 開始新課堂
       </Link>
     </div>

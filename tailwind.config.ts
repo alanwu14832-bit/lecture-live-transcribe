@@ -4,6 +4,8 @@ import type { Config } from "tailwindcss";
 // 元件裡只寫語意名稱（bg-surface、text-secondary），不出現 hex。
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
+  // 觸控裝置點一下會誤觸 hover，只在真的有滑鼠時才套 hover 樣式
+  future: { hoverOnlyWhenSupported: true },
   darkMode: ["class", '[data-theme="dark"]'],
   theme: {
     extend: {
@@ -24,14 +26,22 @@ const config: Config = {
         "warning-soft": "var(--color-warning-soft)",
       },
       fontFamily: {
-        sans: ["Inter", "Noto Sans TC", "system-ui", "-apple-system", "Segoe UI", "PingFang TC", "Microsoft JhengHei", "sans-serif"],
+        sans: ["var(--font-geist-sans)", "Noto Sans TC", "system-ui", "-apple-system", "Segoe UI", "PingFang TC", "Microsoft JhengHei", "sans-serif"],
+        mono: ["var(--font-geist-mono)", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       borderRadius: {
         control: "var(--radius-control)",
         container: "var(--radius-container)",
       },
       boxShadow: {
+        sm: "var(--shadow-sm)",
+        md: "var(--shadow-md)",
         overlay: "var(--shadow-overlay)",
+      },
+      transitionTimingFunction: {
+        out: "var(--ease-out)",
+        "in-out": "var(--ease-in-out)",
+        drawer: "var(--ease-drawer)",
       },
       maxWidth: {
         reading: "var(--reading-max-width)",

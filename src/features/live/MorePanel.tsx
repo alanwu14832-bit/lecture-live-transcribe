@@ -45,7 +45,7 @@ export function MorePanel({
             role="tab"
             aria-selected={tab === t}
             onClick={() => setTab(t)}
-            className={`h-9 px-3 text-sm -mb-px border-b-2 transition-colors duration-150 ${tab === t ? "border-brand text-primary font-medium" : "border-transparent text-secondary hover:text-primary"}`}
+            className={`press h-9 px-3 text-sm -mb-px border-b-2 transition-[border-color,color] duration-200 ease ${tab === t ? "border-brand text-primary font-medium" : "border-transparent text-secondary hover:text-primary"}`}
           >
             {label}
           </button>

@@ -92,6 +92,14 @@ npm run build      # 靜態輸出到 out/
 | 講者分離 | ✅ WebGPU；無 WebGPU 退 CPU（會略過音訊） | Safari 26+ 有 WebGPU | CPU |
 | 詞彙提示（phrase biasing） | 新版 Chrome | ❌ | ❌ |
 
+## 設計與動態原則
+
+- 字體：拉丁字母用自帶的 Geist（`geist` 套件），繁體中文用 Noto Sans TC；時間戳與數字用 Geist Mono 等寬。
+- 圖示：Phosphor（regular 線條），不手畫 SVG。
+- 顏色：淺色主題整組暖灰、深色主題整組冷灰，單一品牌色；陰影染畫布色相，分三層（貼地、浮起、浮層），浮動表面有頂邊亮邊。
+- 動態：只動 `transform` 與 `opacity`；緩動用強曲線（`--ease-out`、`--ease-in-out`、`--ease-drawer`）；按壓 160ms 縮到 0.97；對話框 250ms 放大進場；手機 sheet 450ms 從底部滑入；通知列與新段落只淡入；鍵盤觸發的側欄開關不做動畫；`prefers-reduced-motion` 保留淡入、拿掉位移。
+- 結束課堂改成按住 1.6 秒確認（填色是 linear 進度，放開 200ms 退回），鍵盤使用者按 Enter 會開確認對話框。
+
 ## 技術架構
 
 Next.js 15（static export）、TypeScript、Tailwind CSS、IndexedDB（idb）、Web Audio、Web Speech API、Transformers.js（Whisper）、Vitest。

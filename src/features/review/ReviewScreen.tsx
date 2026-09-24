@@ -144,7 +144,7 @@ export function ReviewScreen() {
       />
 
       <div className="shrink-0 border-b border-border bg-surface px-4 sm:px-6 py-2.5">
-        <div className="mx-auto max-w-reading flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-secondary tnum">
+        <div className="mx-auto max-w-reading flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-secondary mono">
           <span>{new Date(session.startedAt ?? session.createdAt).toLocaleString("zh-TW", { year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
           <span>{formatDuration(session.duration)}</span>
           <span>{LANGUAGE_MODE_LABELS[session.languageMode]}</span>
@@ -169,7 +169,7 @@ export function ReviewScreen() {
         />
       )}
 
-      <div className="flex-1 flex min-h-0">
+      <div id="main" className="flex-1 flex min-h-0">
         <TranscriptView
           segments={segments}
           interim=""
@@ -199,7 +199,7 @@ export function ReviewScreen() {
           emptyHint="這堂課沒有逐字稿。"
         />
         {notesOpen && (
-          <div className="fixed inset-x-0 bottom-0 h-[62dvh] z-30 border-t border-border shadow-overlay md:static md:h-auto md:w-80 md:shrink-0 md:border-t-0 md:border-l md:shadow-none">
+          <div className="sheet fixed inset-x-0 bottom-0 h-[62dvh] z-30 border-t border-border shadow-overlay md:static md:h-auto md:w-80 md:shrink-0 md:border-t-0 md:border-l md:shadow-none">
             <NotesPanel
               notes={notes}
               segments={segments}

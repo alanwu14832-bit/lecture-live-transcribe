@@ -22,7 +22,7 @@ export function StatusPill({ status, size = "md" }: { status: SessionStatusValue
     <span
       role="status"
       aria-live="polite"
-      className={`inline-flex items-center gap-1.5 rounded-full font-medium ${size === "sm" ? "h-6 px-2 text-xs" : "h-7 px-2.5 text-[13px]"} ${s.cls}`}
+      className={`inline-flex items-center gap-1.5 rounded-full font-medium transition-[background-color,color] duration-200 ease ${size === "sm" ? "h-6 px-2 text-xs" : "h-7 px-2.5 text-[13px]"} ${s.cls}`}
     >
       <span className={s.pulse ? "breathe inline-flex" : "inline-flex"}><Icon name={s.icon} size={size === "sm" ? 13 : 14} /></span>
       {STATUS_LABELS[status]}

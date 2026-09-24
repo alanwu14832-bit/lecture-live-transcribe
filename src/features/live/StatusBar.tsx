@@ -32,7 +32,7 @@ export function StatusBar({
         />
         <div className="hidden sm:flex items-center gap-3 mx-auto">
           <StatusPill status={status} />
-          <span className="tnum text-sm text-secondary" aria-label="經過時間">{formatTimestamp(elapsed)}</span>
+          <span className="mono text-sm text-secondary" aria-label="經過時間">{formatTimestamp(elapsed)}</span>
         </div>
         <div className="ml-auto flex items-center gap-0.5 sm:gap-1 shrink-0">
           <Button variant={searchOpen ? "secondary" : "ghost"} size="sm" icon="search" iconOnly aria-label="搜尋逐字稿" aria-pressed={searchOpen} onClick={onSearch} />
@@ -42,7 +42,7 @@ export function StatusBar({
       </div>
       <div className="sm:hidden flex items-center justify-between px-3 pb-2">
         <StatusPill status={status} size="sm" />
-        <span className="tnum text-xs text-secondary">{formatTimestamp(elapsed)}</span>
+        <span className="mono text-xs text-secondary">{formatTimestamp(elapsed)}</span>
       </div>
     </header>
   );

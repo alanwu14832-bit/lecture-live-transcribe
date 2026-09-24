@@ -8,15 +8,16 @@ html, body {
   height: 100%;
   background: var(--color-canvas);
   color: var(--color-text-primary);
-  font-family: Inter, "Noto Sans TC", system-ui, -apple-system, "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  font-family: var(--font-geist-sans), "Noto Sans TC", system-ui, -apple-system, "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
 * { border-color: var(--color-border); }
 
-/* 時間與狀態數字等寬，避免跳動 */
+/* 時間與狀態數字等寬且用等寬字體，避免跳動 */
 .tnum { font-variant-numeric: tabular-nums; }
+.mono { font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; }
 
 /* 清楚的 focus ring，鍵盤使用者才看得到 */
 :focus-visible {
@@ -24,6 +25,17 @@ html, body {
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* 跳到主內容：只有鍵盤 focus 時才出現 */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  transform: translateY(-200%);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.skip-link:focus { transform: translateY(0); }
 
 /* 閱讀區：中英混排的字級與行高由 tokens 控制 */
 .reading {
@@ -40,25 +52,91 @@ html, body {
   cursor: help;
 }
 
-/* 收音中的輕微呼吸，尊重 reduced motion */
+/* ---------- 回饋：任何可按的東西按下去要有反應 ---------- */
+.press { transition: transform var(--duration-press) var(--ease-out); }
+.press:active { transform: scale(0.97); }
+.press-subtle:active { transform: scale(0.995); }
+
+/* 浮起的表面：分層陰影 + 頂邊亮邊 */
+.elevated { box-shadow: var(--edge-highlight), var(--shadow-md); }
+.elevated-overlay { box-shadow: var(--edge-highlight), var(--shadow-overlay); }
+
+/* 列表列 hover 微微浮起（只在真的有滑鼠的裝置） */
+@media (hover: hover) and (pointer: fine) {
+  .row-lift { transition: background-color var(--duration-base) ease, box-shadow var(--duration-base) ease, transform var(--duration-base) var(--ease-out); }
+  .row-lift:hover { box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+}
+
+/* ---------- 進場：東西不能憑空出現 ---------- */
+/* 對話框：置中放大進場，背景一起淡入（modal 不需要 transform-origin 對準觸發點） */
+dialog.dlg {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity var(--duration-modal) var(--ease-out), transform var(--duration-modal) var(--ease-out), overlay var(--duration-modal) allow-discrete, display var(--duration-modal) allow-discrete;
+}
+dialog.dlg::backdrop {
+  background: rgba(17, 19, 24, 0.4);
+  transition: background-color var(--duration-modal) var(--ease-out), overlay var(--duration-modal) allow-discrete, display var(--duration-modal) allow-discrete;
+}
+@starting-style {
+  dialog.dlg[open] { opacity: 0; transform: scale(0.96); }
+  dialog.dlg[open]::backdrop { background: rgba(17, 19, 24, 0); }
+}
+/* 手機上對話框貼底，像 sheet 一樣從下方滑入 */
+@media (max-width: 639px) {
+  dialog.dlg { transition: opacity var(--duration-drawer) var(--ease-drawer), transform var(--duration-drawer) var(--ease-drawer); }
+  @starting-style {
+    dialog.dlg[open] { opacity: 1; transform: translateY(100%); }
+  }
+}
+
+/* 手機版筆記 sheet：從底部滑入。桌面側欄用鍵盤 N 開關，屬於高頻鍵盤操作，不做動畫 */
+@media (max-width: 767px) {
+  .sheet { transform: translateY(0); transition: transform var(--duration-drawer) var(--ease-drawer); }
+  @starting-style { .sheet { transform: translateY(100%); } }
+}
+
+/* 通知列：從上方淡入，只有 opacity 與 transform */
+.notice-enter { opacity: 1; transform: translateY(0); transition: opacity var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out); }
+@starting-style { .notice-enter { opacity: 0; transform: translateY(-4px); } }
+
+/* 逐字稿新段落：只淡入，不位移，避免閱讀時畫面跳動 */
+.segment-enter { opacity: 1; transition: opacity 180ms var(--ease-out); }
+@starting-style { .segment-enter { opacity: 0; } }
+
+/* 「回到最新內容」浮出 */
+.float-enter { opacity: 1; transform: scale(1); transition: opacity var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out); }
+@starting-style { .float-enter { opacity: 0; transform: scale(0.96); } }
+
+/* 按住確認：填色是進度，用 linear；放開要快 */
+.hold-fill {
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 200ms var(--ease-out);
+}
+.hold-active .hold-fill {
+  clip-path: inset(0 0 0 0);
+  transition: clip-path var(--hold-duration, 1600ms) linear;
+}
+
+/* 收音中的輕微呼吸，狀態指示器允許持續動 */
 @keyframes breathe {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.45; }
 }
 .breathe { animation: breathe 1.8s ease-in-out infinite; }
 
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-.fade-in { animation: fade-in var(--duration-base) ease-out; }
-
+/* 減少動態：留下幫助理解的淡入，拿掉位移與縮放 */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+  .breathe { animation: none; }
+  .press:active, .press-subtle:active { transform: none; }
+  .row-lift:hover { transform: none; }
+  @starting-style {
+    dialog.dlg[open] { transform: none; }
+    .sheet { transform: none; }
+    .notice-enter { transform: none; }
+    .float-enter { transform: none; }
   }
+  .sheet, dialog.dlg { transition-duration: 200ms; }
 }
 
 /* 搜尋醒目標示 */
